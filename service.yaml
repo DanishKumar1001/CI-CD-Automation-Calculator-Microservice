@@ -2,12 +2,13 @@ apiVersion: v1
 kind: Service
 metadata:
   name: calculator-microservice
+  labels:
+    app: calculator
 spec:
   selector:
     app: calculator
-  type: NodePort
+  type: LoadBalancer
   ports:
     - protocol: TCP
-      port: 3000           # Internal service port
-      targetPort: 3000     # Port exposed by the container
-      nodePort: 30080      #fixed external port 
+      port: 80
+      targetPort: 3000

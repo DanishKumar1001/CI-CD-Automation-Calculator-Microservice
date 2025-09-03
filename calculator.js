@@ -25,7 +25,7 @@ const logger = winston.createLogger({
     ]
 });
 
-// Connect to MongoDB
+// Connection to MongoDB
 MongoClient.connect(mongoUri)
     .then(client => {
         db = client.db('CalculatorMicroservice');
