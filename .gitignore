@@ -1,0 +1,23 @@
+# Environment files (keep secrets out of Git)
+.env
+.env.*
+
+# Logs
+logs/
+*.log
+
+# Node modules
+node_modules/
+
+# Docker artifacts
+*.pid
+*.seed
+*.swp
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Editor settings
+.idea/
+.vscode/
