@@ -1,148 +1,172 @@
-# 🧮 Calculator Microservice – Database Integration & Kubernetes Deployment
-This project demonstrates the deployment of a Dockerized Node.js calculator microservice onto a Kubernetes cluster as part of SIT737 Task 9.1P. It includes Kubernetes port-forward setup, browser access, application update with a new endpoint, Docker image versioning, and redeployment on Kubernetes.
+# 🧮 Calculator Microservice
 
-# 🚀 Technologies Used
+A containerized **Node.js + Express** microservice with **MongoDB Atlas** integration.  
+It provides simple arithmetic and CRUD APIs, containerization with **Docker**, orchestration with **Kubernetes (GKE)**, and  DevOps pipelines with **GitHub Actions**, **Jenkins**, **SonarQube**, **Selenium**, **Stackdriver Monitoring/Logging**, and **Datadog**.
 
-- Node.js
-- Express.js
-- MongoDB (Atlas)
-- Docker
-- Docker Compose
-- Kubernetes
+---
 
-# ⚙️ Setup and Deployment Instructions
+## 🚀 Features
 
-### 1. Clone the Repository
+- REST API with arithmetic operations:  
+  `/add`, `/subtract`, `/multiply`, `/divide`, `/power`, `/modulo`, `/sqrt`, `/percentage`
+- CRUD API for calculation history:  
+  `/operations`, `/operations/:id`
+- MongoDB integration (Atlas or in-cluster)
+- Containerization with Docker
+- Ochestration with Kubernetes (Local and GKE - GCP)
+- Logging with Winston (stdout → Stackdriver/Datadog)
+- Health endpoint `/health` for probes & uptime checks
+- CI/CD with GitHub Actions and Jenkins
+- Quality analysis (SonarQube) & E2E testing (Selenium)
+- Observability with **Google Cloud Operations (Stackdriver)** and **Datadog**
 
-git clone https://github.com/DanishKumar1001/sit737-2025-t1-prac7p
-cd SIT737-2025-t1-prac7c
+---
 
-## 1. Build and Push Docker Image
+## 📂 Project Structure
 
-docker build -t calculator .
-docker tag calculator your-dockerhub-username/calculator :latest
-docker push your-dockerhub-username/calculator :latest
+├── calculator.js # Node.js service
+├── Dockerfile # Container image
+├── docker-compose.yml # Local dev
+├── deployment.yaml # Calculator Deployment (K8s)
+├── service.yaml # Calculator Service (K8s)
+├── mongo-pvc.yaml # PVC for MongoDB
+├── mongodb-deployment.yaml # MongoDB Deployment
+├── mongo-service.yaml # MongoDB Service
+├── mongo-secret.yaml # Kubernetes Secret (credentials/URI)
+├── .env.example # Example environment file
+├── .gitignore # Ignore sensitive/local files
+├── sonar-project.properties # SonarQube config
+├── tests/ # Smoke + Selenium tests
+├── .github/workflows/ # GitHub Actions CI/CD
+└── Jenkinsfile # Jenkins pipeline
 
-## 2. Deploy Application to Kubernetes
+## ⚙️ Local Development
 
-### Apply the Deployment:
+### 1. Clone & install
 
-kubectl apply -f deployment.yaml
+git clone https://github.com/DanishKumar1001/CI-CD-Automation-Calculator-Microservice.git
+cd CI-CD-Automation-Calculator-Microservice
+npm install
 
-### Apply the Service:
+### 2. Configure environment
 
-kubectl apply -f service.yaml
+**Set values in .env:**
 
-### Check status:
+MONGO_USERNAME=admin
+MONGO_PASSWORD=changeme123
+MONGO_URI=mongodb://admin:changeme123@mongo:27017/
+NODE_ENV=development
+PORT=3000
 
-kubectl get deployments
-kubectl get pods
-kubectl get services
+### 3. Run with Docker Compose
 
-## 3. Access the Application
+docker-compose up --build
 
-After deploying, access the application using:
+## ☸️ Kubernetes on GKE
 
-http://localhost:<NodePort>/
+### 1. Build & push image
 
-## 4. Port-Forward to Access Locally
+docker build -t calculator:v1 .
+docker tag calculator:v1 REGION-docker.pkg.dev/PROJECT_ID/REPO_NAME/calculator:v1
+docker push REGION-docker.pkg.dev/PROJECT_ID/REPO_NAME/calculator:v1
 
-kubectl port-forward service/calculator-microservice 3000:80
+### 2. Create namespace & secrets
 
-## 5. Test API Endpoints
+kubectl create ns calculator
+kubectl -n calculator apply -f mongo-secret.yaml
 
-### 1. Addition
+### 3. Apply manifests
 
-GET /add?num1=10&num2=5
+kubectl -n calculator apply -f mongo-pvc.yaml
+kubectl -n calculator apply -f mongodb-deployment.yaml
+kubectl -n calculator apply -f mongo-service.yaml
+kubectl -n calculator apply -f deployment.yaml
+kubectl -n calculator apply -f service.yaml
 
-### 2. Subtraction
+### 4. Get external IP
 
-GET /subtract?num1=10&num2=5
-Returns error if num1 < num2.
+kubectl -n calculator get svc calculator-microservice -w
 
-### 3. Multiplication
+## Test:
 
-GET /multiply?num1=10&num2=5
+curl http://<EXTERNAL_IP>/health
+curl "http://<EXTERNAL_IP>/add?num1=10&num2=5"
 
-### 4. Division
+## 🔄 CI/CD Pipelines
 
-GET /divide?num1=10&num2=5
-Returns error if num2 == 0.
+### GitHub Actions
 
-### 5. Exponentiation(Power)
+**CI (ci.yml)**
 
-GET /power?num1=2&num2=3
+Installs deps, runs tests
+Optional SonarQube scan
 
-### 6. Modulo 
+**CD (cd.yml)**
 
-GET /modulo?num1=10&num2=3
-Returns error if num2 == 0.
+Builds & pushes image to Artifact Registry
+Deploys to GKE (rolling update)
 
-### 7. Square Root:
+### Jenkins
 
-GET /sqrt?num1=16
-Returns error if num1 is negative.
+**Jenkinsfile stages:**
 
-### 8. Percentage Calculator
+Checkout → Node.js build
+SonarQube static analysis & Quality Gate
+Integration env via Docker Compose
+API smoke + Selenium E2E tests
+Build & push image to Artifact Registry
+Deploy to GKE via kubectl
+Post-deploy smoke test
+Datadog deployment event (+ optional Helm install of Datadog Agent)
 
-GET /percentage?num1=50&num2=200
+## 🧪 Tests
 
-✅ You can test using a browser, curl, or Postman.
+**Smoke tests**
 
-## 5. CRUD ENDPOINTS
+tests/api.smoke.sh checks /health + arithmetic API.
 
-| Method | Endpoint          | Description               |
-| ------ | ----------------- | ------------------------- |
-| GET    | `/operations`     | Retrieve all operations   |
-| GET    | `/operations/:id` | Retrieve by ID            |
-| POST   | `/operations`     | Create a new record       |
-| PUT    | `/operations/:id` | Update an existing record |
-| DELETE | `/operations/:id` | Delete a single record    |
-| DELETE | `/operations`     | Delete all records        |
+**Selenium E2E**
 
+tests/health.selenium.test.js opens /health in headless Chrome via Selenium Grid.
 
-## 6. Error Testing
+**Run locally:**
 
-**Missing Parameters:** Returns 400 Bad Request
-**Invalid Numbers:** Returns 400 Bad Request
-**Subtraction Edge Case:** num1 must be greater than num2
-**Division by Zero:** Not allowed
-**Modulo by Zero:** Not allowed
-**Square Root of Negative Number:** Not allowed
-**Invalid Endpoint:** Returns 404 Not Found
-**Zero Denominator for percentage:** Returns 400 Bad Request if num2 == 0.
+docker-compose -f docker-compose.ci.yml up --build -d
+tests/api.smoke.sh
+node tests/health.selenium.test.js
 
-# 📦 Files Description
+## 📊 Monitoring & Observability
 
-| File / Folder             | Description                                                                |
-| ------------------------- | -------------------------------------------------------------------------- |
-| `calculator.js`           | Main Node.js Express microservice handling arithmetic operations and CRUD. |
-| `Dockerfile`              | Instructions to build the Docker image for the microservice.               |
-| `docker-compose.yml`      | (Optional) Docker setup for local multi-container testing with MongoDB.    |
-| `deployment.yaml`         | Kubernetes Deployment config for the calculator microservice.              |
-| `service.yaml`            | Kubernetes Service exposing the calculator microservice (NodePort).        |
-| `mongodb-deployment.yaml` | Kubernetes Deployment config for MongoDB (optional if using Atlas).        |
-| `mongo-service.yaml`      | Kubernetes Service for MongoDB access within the cluster.                  |
-| `mongo-pv.yaml`           | Persistent Volume definition for MongoDB storage (optional).               |
-| `mongo-pvc.yaml`          | Persistent Volume Claim to bind MongoDB to the PV (optional).              |
-| `logs/`                   | Folder that stores logs generated by Winston (info and error logs).        |
-| `dump/`                   | Folder for optional MongoDB backup using `mongodump`.                      |
-| `package.json`            | Lists project metadata, scripts, and dependencies.                         |
-| `package-lock.json`       | Locks dependency versions to ensure consistent installs.                   |
-| `README.md`               | Complete documentation and usage instructions for the project.             |
+### Google Cloud Operations (Stackdriver)
+
+**Logging:** All stdout/stderr → Logs Explorer (resource.type="k8s_container")
+**Monitoring:** GKE dashboards (CPU, memory, restarts)
+**Uptime checks**: Configure /health with alert policy
+
+### Datadog
+
+**Agent:** Install via Helm → collects logs, metrics, traces
+**Deployment events:** Reported via Jenkins (datadog-ci report-deployment)
+**APM:** Enable dd-trace in calculator.js
 
 ## 🔐 Security Notes
 
-MongoDB credentials stored securely in Kubernetes secrets.
-Database access restricted via MongoDB Atlas IP whitelist.
+1. Never commit .env
+2. **Use Kubernetes Secrets** for MONGO_URI, MONGO_USERNAME, MONGO_PASSWORD
+3. URL-encode special characters in MongoDB URIs:
+! → %21
+@ → %40
+# → %23
 
-## 🛡️ Backup & Recovery
+## 📦 References
 
-For automated backups, upgrade from Free Tier to M10 or Flex on MongoDB Atlas.
-Manual backups possible using MongoDB Compass or mongodump.
-
-#  Reference Links:
-
-Docker - https://docs.docker.com/
-Kubernetes - https://kubernetes.io/docs/home/
-Mongo Atlas - https://www.mongodb.com/products/platform/atlas-database
+Docker
+Kubernetes
+GKE
+Artifact Registry
+GitHub Actions
+Jenkins
+SonarQube
+Selenium
+Datadog
+Cloud Operations (Stackdriver)
