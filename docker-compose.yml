@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: user
+      MONGO_INITDB_ROOT_PASSWORD: pass
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  calculator:
+    build: .
+    container_name: calculator
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGO_URI=mongodb://user:pass@mongo:27017
+    depends_on:
+      - mongo
+    volumes:
+      - ./logs:/usr/src/app/logs
+
+volumes:
+  mongo-data:
