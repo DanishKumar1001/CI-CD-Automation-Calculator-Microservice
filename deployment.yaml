@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: calculator-microservice
+  namespace: calculator
   labels:
     app: calculator
 spec:
@@ -16,7 +17,7 @@ spec:
     spec:
       containers:
         - name: calculator-microservice
-          image: REGION-docker.pkg.dev/PROJECT_ID/REPO_NAME/calculator:latest
+          image: REGION-docker.pkg.dev/PROJECT_ID/REPO_NAME/calculator:IMAGE_TAG # Artificate Registry Image
           ports:
             - containerPort: 3000
           env:
@@ -33,12 +34,14 @@ spec:
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health
               port: 3000
             initialDelaySeconds: 10
             periodSeconds: 15
+            failureThreshold: 3
           resources:
             requests:
               cpu: "100m"
