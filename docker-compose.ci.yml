@@ -1,0 +1,29 @@
+version: "3.8"
+services:
+  mongo:
+    image: mongo:6.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: pass123
+    ports: ["27017:27017"]
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping')\" || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  calculator:
+    build: .
+    environment:
+      MONGO_URI: "mongodb://admin:pass123@mongo:27017/"
+      NODE_ENV: "test"
+      PORT: 3000
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports: ["3000:3000"]
+
+  selenium:
+    image: selenium/standalone-chrome:latest
+    shm_size: 2gb
+    ports: ["4444:4444"]
