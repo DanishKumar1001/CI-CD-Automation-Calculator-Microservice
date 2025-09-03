@@ -2,12 +2,13 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mongo-pvc
+  namespace: calculator
   labels:
     app: mongo
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: manual   # matches mongo-pv.yaml
+  storageClassName: standard-rwo   # GKE default block storage
   resources:
     requests:
-      storage: 1Gi
+      storage: 5Gi
